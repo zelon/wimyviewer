@@ -1,0 +1,16 @@
+{
+  "identifier": "default",
+  "description": "Default capability for WimyViewer",
+  "windows": ["main"],
+  "permissions": [
+    "core:path:default",
+    "core:event:default",
+    "core:window:default",
+    "core:app:default",
+    "core:resources:default",
+    "core:menu:default",
+    "core:tray:default",
+    "core:webview:default",
+    "dialog:allow-open"
+  ]
+}
