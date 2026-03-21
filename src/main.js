@@ -8,6 +8,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   // --- DOM 요소 ---
   const canvas = document.getElementById('viewer');
   const canvasContainer = document.getElementById('canvas-container');
+  const canvasInner = document.getElementById('canvas-inner');
   const spinner = document.getElementById('spinner');
   const statusBar = document.getElementById('status-bar');
   const openFolderBtn = document.getElementById('open-folder');
@@ -24,7 +25,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   let filePaths = [];
   let currentIndex = 0;
   let zoomLevel = 1.0;
-  let panX = 0, panY = 0;
   let isDragging = false, dragStartX = 0, dragStartY = 0;
   const cache = new SlidingWindowCache(2);
 
@@ -71,7 +71,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (index === currentIndex && cache.has(index)) return;
 
     currentIndex = index;
-    panX = 0; panY = 0;
     updateStatus();
 
     if (cache.has(currentIndex)) {
@@ -104,23 +103,31 @@ window.addEventListener('DOMContentLoaded', async () => {
   function renderCurrentImage() {
     if (!cache.has(currentIndex)) return;
     renderImage(canvas, cache.get(currentIndex));
-    applyTransform();
+    updateLayout();
+    centerScroll();
     hideSpinner(spinner);
     updateStatus();
   }
 
   // --- 줌 + 패닝 ---
-  function clampPan() {
-    const maxX = Math.max(0, (canvas.width * zoomLevel - canvasContainer.clientWidth) / 2);
-    const maxY = Math.max(0, (canvas.height * zoomLevel - canvasContainer.clientHeight) / 2);
-    panX = Math.max(-maxX, Math.min(maxX, panX));
-    panY = Math.max(-maxY, Math.min(maxY, panY));
+  function updateLayout() {
+    const iw = canvas.width * zoomLevel;
+    const ih = canvas.height * zoomLevel;
+    const cw = canvasContainer.clientWidth;
+    const ch = canvasContainer.clientHeight;
+    canvasInner.style.width = `${Math.max(iw, cw)}px`;
+    canvasInner.style.height = `${Math.max(ih, ch)}px`;
+    canvas.style.left = `${Math.max(0, (cw - iw) / 2)}px`;
+    canvas.style.top = `${Math.max(0, (ch - ih) / 2)}px`;
+    canvas.style.transform = `scale(${zoomLevel})`;
+    updateCursor();
   }
 
-  function applyTransform() {
-    clampPan();
-    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-    updateCursor();
+  function centerScroll() {
+    const iw = canvas.width * zoomLevel;
+    const ih = canvas.height * zoomLevel;
+    canvasContainer.scrollLeft = Math.max(0, (iw - canvasContainer.clientWidth) / 2);
+    canvasContainer.scrollTop = Math.max(0, (ih - canvasContainer.clientHeight) / 2);
   }
 
   function isImageLargerThanViewport() {
@@ -138,17 +145,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   canvas.addEventListener('mousedown', (e) => {
     if (e.button !== 0 || !isImageLargerThanViewport()) return;
     isDragging = true;
-    dragStartX = e.clientX - panX;
-    dragStartY = e.clientY - panY;
+    dragStartX = e.clientX + canvasContainer.scrollLeft;
+    dragStartY = e.clientY + canvasContainer.scrollTop;
     canvas.style.cursor = 'grabbing';
     e.preventDefault();
   });
 
   window.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
-    panX = e.clientX - dragStartX;
-    panY = e.clientY - dragStartY;
-    applyTransform();
+    canvasContainer.scrollLeft = dragStartX - e.clientX;
+    canvasContainer.scrollTop = dragStartY - e.clientY;
   });
 
   window.addEventListener('mouseup', (e) => {
@@ -188,7 +194,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     cache.clear();
     currentIndex = 0;
     zoomLevel = 1.0;
-    applyTransform();
     showSpinner(spinner);
     updateStatus();
 
@@ -221,10 +226,21 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('wheel', async (e) => {
     e.preventDefault();
     if (e.ctrlKey) {
+      const oldZoom = zoomLevel;
+      const cw = canvasContainer.clientWidth;
+      const ch = canvasContainer.clientHeight;
+      const oldLeft = Math.max(0, (cw - canvas.width * oldZoom) / 2);
+      const oldTop  = Math.max(0, (ch - canvas.height * oldZoom) / 2);
+      const imgPx = (canvasContainer.scrollLeft + cw / 2 - oldLeft) / oldZoom;
+      const imgPy = (canvasContainer.scrollTop  + ch / 2 - oldTop)  / oldZoom;
+
       zoomLevel = Math.max(0.1, Math.min(10.0, zoomLevel + (e.deltaY > 0 ? -0.1 : 0.1)));
-      // 줌 아웃으로 이미지가 뷰포트에 맞아떨어지면 pan 초기화
-      if (!isImageLargerThanViewport()) { panX = 0; panY = 0; }
-      applyTransform();
+      updateLayout();
+
+      const newLeft = Math.max(0, (cw - canvas.width * zoomLevel) / 2);
+      const newTop  = Math.max(0, (ch - canvas.height * zoomLevel) / 2);
+      canvasContainer.scrollLeft = imgPx * zoomLevel + newLeft - cw / 2;
+      canvasContainer.scrollTop  = imgPy * zoomLevel + newTop  - ch / 2;
       updateStatus();
     } else {
       await navigate(e.deltaY > 0 ? currentIndex + 1 : currentIndex - 1);

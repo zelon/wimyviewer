@@ -51,14 +51,34 @@
     #canvas-container {
       flex: 1;
       overflow: auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: relative;
+    }
+
+    #canvas-container::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    #canvas-container::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+
+    #canvas-container::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 4px;
+    }
+
+    #canvas-container::-webkit-scrollbar-thumb:hover {
+      background: #777;
+    }
+
+    #canvas-inner {
       position: relative;
     }
 
     #viewer {
-      transform-origin: center;
+      position: absolute;
+      transform-origin: top left;
       display: block;
       image-rendering: pixelated;
     }
@@ -193,7 +213,9 @@
 
   <!-- 이미지 표시 영역 -->
   <div id="canvas-container">
-    <canvas id="viewer"></canvas>
+    <div id="canvas-inner">
+      <canvas id="viewer"></canvas>
+    </div>
     <div id="spinner">
       <div class="spinner-ring"></div>
     </div>
