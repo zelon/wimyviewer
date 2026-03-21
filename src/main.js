@@ -7,6 +7,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // --- DOM 요소 ---
   const canvas = document.getElementById('viewer');
+  const canvasContainer = document.getElementById('canvas-container');
   const spinner = document.getElementById('spinner');
   const statusBar = document.getElementById('status-bar');
   const openFolderBtn = document.getElementById('open-folder');
@@ -23,6 +24,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   let filePaths = [];
   let currentIndex = 0;
   let zoomLevel = 1.0;
+  let panX = 0, panY = 0;
+  let isDragging = false, dragStartX = 0, dragStartY = 0;
   const cache = new SlidingWindowCache(2);
 
   // --- 이미지 로드 ---
@@ -68,6 +71,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (index === currentIndex && cache.has(index)) return;
 
     currentIndex = index;
+    panX = 0; panY = 0;
     updateStatus();
 
     if (cache.has(currentIndex)) {
@@ -100,15 +104,58 @@ window.addEventListener('DOMContentLoaded', async () => {
   function renderCurrentImage() {
     if (!cache.has(currentIndex)) return;
     renderImage(canvas, cache.get(currentIndex));
-    applyZoom();
+    applyTransform();
     hideSpinner(spinner);
     updateStatus();
   }
 
-  // --- 줌 ---
-  function applyZoom() {
-    canvas.style.transform = `scale(${zoomLevel})`;
+  // --- 줌 + 패닝 ---
+  function clampPan() {
+    const maxX = Math.max(0, (canvas.width * zoomLevel - canvasContainer.clientWidth) / 2);
+    const maxY = Math.max(0, (canvas.height * zoomLevel - canvasContainer.clientHeight) / 2);
+    panX = Math.max(-maxX, Math.min(maxX, panX));
+    panY = Math.max(-maxY, Math.min(maxY, panY));
   }
+
+  function applyTransform() {
+    clampPan();
+    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+    updateCursor();
+  }
+
+  function isImageLargerThanViewport() {
+    return canvas.width * zoomLevel > canvasContainer.clientWidth ||
+           canvas.height * zoomLevel > canvasContainer.clientHeight;
+  }
+
+  function updateCursor() {
+    if (isDragging) canvas.style.cursor = 'grabbing';
+    else if (isImageLargerThanViewport()) canvas.style.cursor = 'grab';
+    else canvas.style.cursor = 'default';
+  }
+
+  // 드래그로 패닝
+  canvas.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 || !isImageLargerThanViewport()) return;
+    isDragging = true;
+    dragStartX = e.clientX - panX;
+    dragStartY = e.clientY - panY;
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    panX = e.clientX - dragStartX;
+    panY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  window.addEventListener('mouseup', (e) => {
+    if (e.button !== 0 || !isDragging) return;
+    isDragging = false;
+    updateCursor();
+  });
 
   // --- 상태바 ---
   function updateStatus() {
@@ -141,7 +188,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     cache.clear();
     currentIndex = 0;
     zoomLevel = 1.0;
-    applyZoom();
+    applyTransform();
     showSpinner(spinner);
     updateStatus();
 
@@ -175,7 +222,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     if (e.ctrlKey) {
       zoomLevel = Math.max(0.1, Math.min(10.0, zoomLevel + (e.deltaY > 0 ? -0.1 : 0.1)));
-      applyZoom();
+      // 줌 아웃으로 이미지가 뷰포트에 맞아떨어지면 pan 초기화
+      if (!isImageLargerThanViewport()) { panX = 0; panY = 0; }
+      applyTransform();
       updateStatus();
     } else {
       await navigate(e.deltaY > 0 ? currentIndex + 1 : currentIndex - 1);
