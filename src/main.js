@@ -320,9 +320,26 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   // --- 윈도우 컨트롤 ---
+  const winMaximizeBtn = document.getElementById('win-maximize');
+
+  const ICON_MAXIMIZE = `<svg viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1"/></svg>`;
+  const ICON_RESTORE  = `<svg viewBox="0 0 10 10"><rect x="2" y="0" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1"/><rect x="0" y="2" width="8" height="8" fill="#111114" stroke="currentColor" stroke-width="1"/></svg>`;
+
+  async function syncMaximizeIcon() {
+    const maximized = await appWindow.isMaximized();
+    winMaximizeBtn.innerHTML = maximized ? ICON_RESTORE : ICON_MAXIMIZE;
+    winMaximizeBtn.title = maximized ? '이전 크기로' : '최대화';
+  }
+
   document.getElementById('win-minimize').addEventListener('click', () => appWindow.minimize());
-  document.getElementById('win-maximize').addEventListener('click', () => appWindow.toggleMaximize());
+  winMaximizeBtn.addEventListener('click', async () => {
+    await appWindow.toggleMaximize();
+    await syncMaximizeIcon();
+  });
   document.getElementById('win-close').addEventListener('click', () => appWindow.close());
+
+  await listen('tauri://resize', syncMaximizeIcon);
+  await syncMaximizeIcon();
 
   // --- 네비게이션 화살표 ---
   navPrev.addEventListener('click', () => navigate(currentIndex - 1));
