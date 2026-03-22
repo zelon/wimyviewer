@@ -1,7 +1,7 @@
 mod commands;
 mod decoder;
 
-use commands::{delete_file, load_directory, prepare_psd, rename_file, select_folder};
+use commands::{delete_file, load_directory, prepare_psd, rename_file, select_folder, show_in_explorer};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -13,6 +13,7 @@ pub fn run() {
             prepare_psd,
             delete_file,
             rename_file,
+            show_in_explorer,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

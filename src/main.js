@@ -20,6 +20,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const renameInput = document.getElementById('rename-input');
   const renameConfirmBtn = document.getElementById('rename-confirm');
   const renameCancelBtn = document.getElementById('rename-cancel');
+  const contextMenu = document.getElementById('context-menu');
+  const ctxShowInExplorer = document.getElementById('ctx-show-in-explorer');
 
   // --- 상태 ---
   let filePaths = [];
@@ -162,6 +164,36 @@ window.addEventListener('DOMContentLoaded', async () => {
     isDragging = false;
     updateCursor();
   });
+
+  // --- 컨텍스트 메뉴 ---
+  function hideContextMenu() {
+    contextMenu.style.display = 'none';
+  }
+
+  canvas.addEventListener('contextmenu', (e) => {
+    if (filePaths.length === 0) return;
+    e.preventDefault();
+    const menuW = contextMenu.offsetWidth || 164;
+    const menuH = contextMenu.offsetHeight || 36;
+    const x = Math.min(e.clientX, window.innerWidth - menuW - 4);
+    const y = Math.min(e.clientY, window.innerHeight - menuH - 4);
+    contextMenu.style.left = `${x}px`;
+    contextMenu.style.top = `${y}px`;
+    contextMenu.style.display = 'block';
+  });
+
+  ctxShowInExplorer.addEventListener('click', () => {
+    hideContextMenu();
+    invoke('show_in_explorer', { path: filePaths[currentIndex] }).catch(console.error);
+  });
+
+  window.addEventListener('mousedown', (e) => {
+    if (!contextMenu.contains(e.target)) hideContextMenu();
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideContextMenu();
+  }, true);
 
   // --- 상태바 ---
   function updateStatus() {

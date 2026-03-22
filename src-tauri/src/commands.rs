@@ -67,3 +67,12 @@ pub fn rename_file(old_path: String, new_name: String) -> Result<String, String>
     std::fs::rename(&old, &new_path).map_err(|e| format!("파일 이름 변경 실패: {}", e))?;
     Ok(new_path.to_string_lossy().to_string())
 }
+
+#[tauri::command]
+pub fn show_in_explorer(path: String) -> Result<(), String> {
+    std::process::Command::new("explorer")
+        .arg(format!("/select,{}", path))
+        .spawn()
+        .map_err(|e| format!("탐색기 열기 실패: {}", e))?;
+    Ok(())
+}

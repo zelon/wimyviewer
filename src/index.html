@@ -193,6 +193,35 @@
       background: #4a4a4a;
     }
 
+    /* 컨텍스트 메뉴 */
+    #context-menu {
+      display: none;
+      position: fixed;
+      background: #2c2c2c;
+      border: 1px solid #555;
+      border-radius: 4px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      z-index: 1000;
+      min-width: 160px;
+      padding: 4px 0;
+    }
+
+    #context-menu button {
+      display: block;
+      width: 100%;
+      padding: 7px 16px;
+      background: none;
+      border: none;
+      color: #ddd;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    #context-menu button:hover {
+      background: #3a3a3a;
+    }
+
     #rename-confirm {
       background: #2980b9;
       color: #fff;
@@ -243,6 +272,11 @@
       <button id="rename-confirm">변경</button>
     </div>
   </dialog>
+
+  <!-- 우클릭 컨텍스트 메뉴 -->
+  <div id="context-menu">
+    <button id="ctx-show-in-explorer">탐색기에서 보기</button>
+  </div>
 
   <script type="module" src="./main.js"></script>
 </body>
