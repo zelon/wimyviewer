@@ -15,39 +15,75 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      background: #1a1a1a;
-      color: #ccc;
-      font-family: 'Segoe UI', sans-serif;
+      background: #0d0d0f;
+      color: #e0e0e0;
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
       overflow: hidden;
       user-select: none;
     }
 
-    /* 툴바 */
+    /* ── 툴바 ── */
     #toolbar {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      background: #2a2a2a;
-      border-bottom: 1px solid #3a3a3a;
+      height: 36px;
+      padding: 0 12px;
+      background: #111114;
+      border-bottom: 1px solid #1e1e24;
       flex-shrink: 0;
+      gap: 4px;
     }
 
-    #open-folder {
-      padding: 4px 14px;
-      background: #3a3a3a;
-      color: #ddd;
-      border: 1px solid #555;
-      border-radius: 4px;
+    .app-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #444;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      flex: 1;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .tool-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 26px;
+      padding: 0 10px;
+      background: none;
+      border: none;
+      border-radius: 6px;
+      color: #666;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      transition: background 0.15s, color 0.15s;
     }
 
-    #open-folder:hover {
-      background: #4a4a4a;
+    .tool-btn:hover {
+      background: #1e1e28;
+      color: #ddd;
     }
 
-    /* 캔버스 영역 */
+    .tool-btn.active {
+      color: #7c8dfa;
+      background: rgba(92, 107, 250, 0.12);
+    }
+
+    .toolbar-sep {
+      width: 1px;
+      height: 14px;
+      background: #222228;
+      margin: 0 4px;
+    }
+
+    /* ── 캔버스 영역 ── */
     #canvas-container {
       flex: 1;
       overflow: auto;
@@ -55,21 +91,21 @@
     }
 
     #canvas-container::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+      width: 5px;
+      height: 5px;
     }
 
     #canvas-container::-webkit-scrollbar-track {
-      background: #1a1a1a;
+      background: transparent;
     }
 
     #canvas-container::-webkit-scrollbar-thumb {
-      background: #555;
-      border-radius: 4px;
+      background: #222228;
+      border-radius: 3px;
     }
 
     #canvas-container::-webkit-scrollbar-thumb:hover {
-      background: #777;
+      background: #33333e;
     }
 
     #canvas-inner {
@@ -83,93 +119,193 @@
       image-rendering: pixelated;
     }
 
-    /* 로딩 스피너 */
+    /* ── 네비게이션 화살표 ── */
+    .nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 64px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s, background 0.15s, color 0.15s, border-color 0.15s;
+      z-index: 10;
+      backdrop-filter: blur(4px);
+      line-height: 1;
+    }
+
+    #nav-prev { left: 12px; }
+    #nav-next { right: 12px; }
+
+    #canvas-container:hover .nav-arrow {
+      opacity: 1;
+    }
+
+    .nav-arrow:hover {
+      background: rgba(92, 107, 250, 0.22);
+      color: #fff;
+      border-color: rgba(92, 107, 250, 0.35);
+    }
+
+    /* ── 로딩 스피너 ── */
     #spinner {
       display: none;
       position: absolute;
       inset: 0;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.4);
+      pointer-events: none;
     }
 
     .spinner-ring {
-      width: 48px;
-      height: 48px;
-      border: 5px solid #555;
-      border-top-color: #aaa;
+      width: 34px;
+      height: 34px;
+      border: 3px solid #1e1e24;
+      border-top-color: #5b6af5;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.7s linear infinite;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
-    /* 상태바 */
+    /* ── 상태바 ── */
     #status-bar {
-      padding: 4px 12px;
-      background: #2a2a2a;
-      border-top: 1px solid #3a3a3a;
-      font-size: 12px;
-      color: #999;
+      background: #111114;
+      border-top: 1px solid #1e1e24;
       flex-shrink: 0;
     }
 
-    /* 공통 다이얼로그 */
+    .status-progress-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px 3px;
+    }
+
+    #progress-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 2px;
+      background: #222228;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    #progress-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #5b6af5;
+      cursor: pointer;
+      transition: transform 0.12s;
+    }
+
+    #progress-slider:hover::-webkit-slider-thumb {
+      transform: scale(1.4);
+    }
+
+    #status-counter {
+      font-size: 11px;
+      color: #444;
+      white-space: nowrap;
+      min-width: 50px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2px 14px 6px;
+    }
+
+    #status-filename {
+      font-size: 11px;
+      color: #666;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #status-zoom {
+      font-size: 11px;
+      color: #444;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    /* ── 다이얼로그 ── */
     dialog {
-      background: #2c2c2c;
-      color: #ddd;
-      border: 1px solid #555;
-      border-radius: 8px;
+      background: #16161b;
+      color: #e0e0e0;
+      border: 1px solid #252530;
+      border-radius: 12px;
       padding: 24px;
-      min-width: 320px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      min-width: 340px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85);
     }
 
     dialog::backdrop {
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
     }
 
     dialog h3 {
-      margin-bottom: 12px;
-      font-size: 15px;
+      margin-bottom: 10px;
+      font-size: 14px;
       font-weight: 600;
     }
 
     dialog p {
       margin-bottom: 20px;
       font-size: 13px;
-      color: #aaa;
+      color: #666;
       word-break: break-all;
+      line-height: 1.6;
     }
 
     dialog input[type="text"] {
       flex: 1;
-      padding: 6px 10px;
-      background: #1a1a1a;
-      color: #ddd;
-      border: 1px solid #555;
-      border-radius: 4px;
+      padding: 8px 12px;
+      background: #0d0d0f;
+      color: #e0e0e0;
+      border: 1px solid #252530;
+      border-radius: 8px;
       font-size: 13px;
       outline: none;
       min-width: 0;
+      transition: border-color 0.15s;
     }
 
     dialog input[type="text"]:focus {
-      border-color: #888;
+      border-color: #5b6af5;
     }
 
     .rename-row {
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     #rename-ext {
       font-size: 13px;
-      color: #888;
+      color: #444;
       white-space: nowrap;
       flex-shrink: 0;
     }
@@ -181,17 +317,18 @@
     }
 
     .dialog-buttons button {
-      padding: 5px 16px;
-      border-radius: 4px;
-      border: 1px solid #555;
+      padding: 7px 18px;
+      border-radius: 8px;
+      border: 1px solid transparent;
       cursor: pointer;
       font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s;
     }
 
     .btn-confirm {
       background: #c0392b;
       color: #fff;
-      border-color: #922b21;
     }
 
     .btn-confirm:hover {
@@ -199,59 +336,68 @@
     }
 
     .btn-cancel {
-      background: #3a3a3a;
-      color: #ccc;
+      background: transparent;
+      color: #777;
+      border-color: #252530;
     }
 
     .btn-cancel:hover {
-      background: #4a4a4a;
+      background: #1e1e28;
+      color: #ccc;
     }
 
-    /* 컨텍스트 메뉴 */
+    #rename-confirm {
+      background: #5b6af5;
+      color: #fff;
+    }
+
+    #rename-confirm:hover {
+      background: #6c7dff;
+    }
+
+    /* ── 컨텍스트 메뉴 ── */
     #context-menu {
       display: none;
       position: fixed;
-      background: #2c2c2c;
-      border: 1px solid #555;
-      border-radius: 4px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      background: #16161b;
+      border: 1px solid #252530;
+      border-radius: 10px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75);
       z-index: 1000;
-      min-width: 160px;
-      padding: 4px 0;
+      min-width: 180px;
+      padding: 5px;
     }
 
     #context-menu button {
       display: block;
       width: 100%;
-      padding: 7px 16px;
+      padding: 8px 12px;
       background: none;
       border: none;
-      color: #ddd;
+      border-radius: 6px;
+      color: #ccc;
       font-size: 13px;
       text-align: left;
       cursor: pointer;
+      transition: background 0.1s;
     }
 
     #context-menu button:hover {
-      background: #3a3a3a;
-    }
-
-    #rename-confirm {
-      background: #2980b9;
-      color: #fff;
-      border-color: #1a6a9a;
-    }
-
-    #rename-confirm:hover {
-      background: #3498db;
+      background: #1e1e28;
     }
   </style>
 </head>
 <body>
 
   <!-- 툴바 -->
-  <div id="toolbar">
-    <button id="open-folder">파일 열기</button>
+  <div id="toolbar" data-tauri-drag-region>
+    <span class="app-title" data-tauri-drag-region>WimyViewer</span>
+    <div class="toolbar-actions">
+      <button id="open-folder" class="tool-btn" title="파일 열기">열기</button>
+      <div class="toolbar-sep"></div>
+      <button id="zoom-actual" class="tool-btn" title="실제 크기 (1)">1:1</button>
+      <button id="zoom-fit" class="tool-btn" title="화면 맞춤 (0)">Fit</button>
+    </div>
   </div>
 
   <!-- 이미지 표시 영역 -->
@@ -262,10 +408,21 @@
     <div id="spinner">
       <div class="spinner-ring"></div>
     </div>
+    <button id="nav-prev" class="nav-arrow">&#8249;</button>
+    <button id="nav-next" class="nav-arrow">&#8250;</button>
   </div>
 
   <!-- 상태바 -->
-  <div id="status-bar">폴더를 열어 이미지를 불러오세요.</div>
+  <div id="status-bar">
+    <div class="status-progress-row">
+      <input type="range" id="progress-slider" min="0" max="0" value="0" />
+      <span id="status-counter">—</span>
+    </div>
+    <div class="status-info-row">
+      <span id="status-filename">폴더를 열어 이미지를 불러오세요.</span>
+      <span id="status-zoom"></span>
+    </div>
+  </div>
 
   <!-- 삭제 확인 팝업 -->
   <dialog id="delete-dialog">

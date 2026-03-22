@@ -11,7 +11,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const canvasContainer = document.getElementById('canvas-container');
   const canvasInner = document.getElementById('canvas-inner');
   const spinner = document.getElementById('spinner');
-  const statusBar = document.getElementById('status-bar');
+  const statusFilename = document.getElementById('status-filename');
+  const statusCounter = document.getElementById('status-counter');
+  const statusZoom = document.getElementById('status-zoom');
+  const progressSlider = document.getElementById('progress-slider');
+  const navPrev = document.getElementById('nav-prev');
+  const navNext = document.getElementById('nav-next');
+  const zoomActualBtn = document.getElementById('zoom-actual');
+  const zoomFitBtn = document.getElementById('zoom-fit');
   const openFolderBtn = document.getElementById('open-folder');
   const deleteDialog = document.getElementById('delete-dialog');
   const deleteFilename = document.getElementById('delete-filename');
@@ -235,13 +242,24 @@ window.addEventListener('DOMContentLoaded', async () => {
   // --- 상태바 ---
   function updateStatus() {
     if (filePaths.length === 0) {
-      statusBar.textContent = '이미지 없음';
+      statusFilename.textContent = '이미지 없음';
+      statusCounter.textContent = '—';
+      statusZoom.textContent = '';
+      progressSlider.max = 0;
+      progressSlider.value = 0;
+      zoomFitBtn.classList.remove('active');
+      zoomActualBtn.classList.remove('active');
       return;
     }
     const filename = filePaths[currentIndex].replace(/\\/g, '/').split('/').pop();
     const zoomPct = Math.round(zoomLevel * 100);
-    const zoomStr = fitMode ? `Fit to screen(${zoomPct}%)` : `${zoomPct}%`;
-    statusBar.textContent = `${filename}  |  ${currentIndex + 1} / ${filePaths.length}  |  ${zoomStr}`;
+    statusFilename.textContent = filename;
+    statusCounter.textContent = `${currentIndex + 1} / ${filePaths.length}`;
+    statusZoom.textContent = fitMode ? `Fit (${zoomPct}%)` : `${zoomPct}%`;
+    progressSlider.max = filePaths.length - 1;
+    progressSlider.value = currentIndex;
+    zoomFitBtn.classList.toggle('active', fitMode);
+    zoomActualBtn.classList.toggle('active', !fitMode && zoomLevel === 1.0);
   }
 
   // --- 파일 열기 ---
@@ -250,13 +268,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     const dir = selectedFile.substring(0, selectedFile.lastIndexOf(sep));
 
     const paths = await invoke('load_directory', { dirPath: dir }).catch(e => {
-      statusBar.textContent = `디렉토리 로드 실패: ${e}`;
+      statusFilename.textContent = `디렉토리 로드 실패: ${e}`;
       return null;
     });
     if (!paths) return;
 
     if (paths.length === 0) {
-      statusBar.textContent = '지원하는 이미지 파일이 없습니다.';
+      statusFilename.textContent = '지원하는 이미지 파일이 없습니다.';
       return;
     }
 
@@ -275,7 +293,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       renderCurrentImage();
     } catch (e) {
       hideSpinner(spinner);
-      statusBar.textContent = `이미지 로드 실패: ${e}`;
+      statusFilename.textContent = `이미지 로드 실패: ${e}`;
     }
     schedulePreload(startIndex);
   }
@@ -284,6 +302,30 @@ window.addEventListener('DOMContentLoaded', async () => {
     const selectedFile = await invoke('select_file').catch(() => null);
     if (!selectedFile) return;
     await openFileByPath(selectedFile);
+  });
+
+  // --- 툴바 줌 버튼 ---
+  zoomActualBtn.addEventListener('click', () => {
+    if (filePaths.length === 0) return;
+    fitMode = false;
+    localStorage.setItem('fitMode', 'false');
+    zoomLevel = 1.0;
+    updateLayout();
+    centerScroll();
+    updateStatus();
+  });
+
+  zoomFitBtn.addEventListener('click', () => {
+    if (filePaths.length > 0) enableFitMode();
+  });
+
+  // --- 네비게이션 화살표 ---
+  navPrev.addEventListener('click', () => navigate(currentIndex - 1));
+  navNext.addEventListener('click', () => navigate(currentIndex + 1));
+
+  // --- 진행 슬라이더 ---
+  progressSlider.addEventListener('input', (e) => {
+    navigate(parseInt(e.target.value));
   });
 
   // 시작 인자로 파일이 전달된 경우 자동으로 열기
@@ -391,7 +433,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     if (filePaths.length === 0) {
       canvas.width = 0; canvas.height = 0;
-      statusBar.textContent = '이미지 없음';
+      updateStatus();
       return;
     }
     if (currentIndex >= filePaths.length) currentIndex = filePaths.length - 1;
