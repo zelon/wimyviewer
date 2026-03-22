@@ -28,6 +28,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   let filePaths = [];
   let currentIndex = 0;
   let zoomLevel = 1.0;
+  let fitMode = false;
   let isDragging = false, dragStartX = 0, dragStartY = 0;
   const cache = new SlidingWindowCache(2);
 
@@ -122,8 +123,27 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('status-bar').style.display = isFullscreen ? 'none' : '';
   }
 
+  function calcFitZoom() {
+    return Math.min(
+      canvasContainer.clientWidth / canvas.width,
+      canvasContainer.clientHeight / canvas.height
+    );
+  }
+
+  function enableFitMode() {
+    fitMode = true;
+    zoomLevel = calcFitZoom();
+    updateLayout();
+    centerScroll();
+    updateStatus();
+  }
+
   window.addEventListener('resize', () => {
-    if (filePaths.length > 0) updateLayout();
+    if (filePaths.length === 0) return;
+    if (fitMode) {
+      zoomLevel = calcFitZoom();
+    }
+    updateLayout();
   });
 
   // --- 줌 + 패닝 ---
@@ -218,7 +238,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     const filename = filePaths[currentIndex].replace(/\\/g, '/').split('/').pop();
     const zoomPct = Math.round(zoomLevel * 100);
-    statusBar.textContent = `${filename}  |  ${currentIndex + 1} / ${filePaths.length}  |  ${zoomPct}%`;
+    const zoomStr = fitMode ? `Fit to screen(${zoomPct}%)` : `${zoomPct}%`;
+    statusBar.textContent = `${filename}  |  ${currentIndex + 1} / ${filePaths.length}  |  ${zoomStr}`;
   }
 
   // --- 파일 열기 ---
@@ -281,6 +302,14 @@ window.addEventListener('DOMContentLoaded', async () => {
       case 'F2':         e.preventDefault(); showRenameDialog(); break;
       case 'F11':        e.preventDefault(); await toggleFullscreen(); break;
       case 'f':          e.preventDefault(); await toggleFullscreen(); break;
+      case '1':
+        e.preventDefault();
+        if (filePaths.length > 0) { fitMode = false; zoomLevel = 1.0; updateLayout(); centerScroll(); updateStatus(); }
+        break;
+      case '0':
+        e.preventDefault();
+        if (filePaths.length > 0) enableFitMode();
+        break;
       case 'Enter':
         if (e.altKey) { e.preventDefault(); await toggleFullscreen(); }
         break;
@@ -294,6 +323,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('wheel', async (e) => {
     e.preventDefault();
     if (e.ctrlKey) {
+      fitMode = false;
       const oldZoom = zoomLevel;
       const cw = canvasContainer.clientWidth;
       const ch = canvasContainer.clientHeight;
