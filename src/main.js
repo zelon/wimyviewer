@@ -291,6 +291,22 @@ window.addEventListener('DOMContentLoaded', async () => {
     await openFileByPath(startupFile);
   }
 
+  // --- 파일 드래그-드롭 ---
+  await listen('tauri://drag-drop', async (event) => {
+    const paths = event.payload?.paths ?? event.payload;
+    if (!Array.isArray(paths) || paths.length === 0) return;
+    const supported = /\.(psd|png|jpg|jpeg|webp|bmp|gif|ico)$/i;
+    const dropped = paths[0];
+
+    if (supported.test(dropped)) {
+      await openFileByPath(dropped);
+    } else {
+      // 폴더로 간주하고 디렉토리 내 첫 번째 파일 열기
+      const dirFiles = await invoke('load_directory', { dirPath: dropped }).catch(() => null);
+      if (dirFiles && dirFiles.length > 0) await openFileByPath(dirFiles[0]);
+    }
+  });
+
   // --- 키보드 ---
   window.addEventListener('keydown', async (e) => {
     if (deleteDialog.open || renameDialog.open) return;
