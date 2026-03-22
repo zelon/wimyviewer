@@ -19,6 +19,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const deleteCancelBtn = document.getElementById('delete-cancel');
   const renameDialog = document.getElementById('rename-dialog');
   const renameInput = document.getElementById('rename-input');
+  const renameExtSpan = document.getElementById('rename-ext');
   const renameConfirmBtn = document.getElementById('rename-confirm');
   const renameCancelBtn = document.getElementById('rename-cancel');
   const contextMenu = document.getElementById('context-menu');
@@ -404,16 +405,28 @@ window.addEventListener('DOMContentLoaded', async () => {
   deleteCancelBtn.addEventListener('click', () => deleteDialog.close());
 
   // --- 이름 변경 팝업 ---
+  let renameExt = '';
+
   function showRenameDialog() {
     if (filePaths.length === 0) return;
-    renameInput.value = filePaths[currentIndex].replace(/\\/g, '/').split('/').pop();
+    const full = filePaths[currentIndex].replace(/\\/g, '/').split('/').pop();
+    const dotIdx = full.lastIndexOf('.');
+    if (dotIdx > 0) {
+      renameExt = full.slice(dotIdx);          // e.g. ".png"
+      renameInput.value = full.slice(0, dotIdx);
+    } else {
+      renameExt = '';
+      renameInput.value = full;
+    }
+    renameExtSpan.textContent = renameExt;
     renameDialog.showModal();
     renameInput.select();
   }
 
   async function confirmRename() {
-    const newName = renameInput.value.trim();
-    if (!newName) return;
+    const baseName = renameInput.value.trim();
+    if (!baseName) return;
+    const newName = baseName + renameExt;
     renameDialog.close();
     try {
       filePaths[currentIndex] = await invoke('rename_file', {

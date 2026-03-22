@@ -145,19 +145,33 @@
     }
 
     dialog input[type="text"] {
-      width: 100%;
+      flex: 1;
       padding: 6px 10px;
       background: #1a1a1a;
       color: #ddd;
       border: 1px solid #555;
       border-radius: 4px;
       font-size: 13px;
-      margin-bottom: 16px;
       outline: none;
+      min-width: 0;
     }
 
     dialog input[type="text"]:focus {
       border-color: #888;
+    }
+
+    .rename-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    #rename-ext {
+      font-size: 13px;
+      color: #888;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .dialog-buttons {
@@ -266,7 +280,10 @@
   <!-- 이름 변경 팝업 -->
   <dialog id="rename-dialog">
     <h3>파일 이름 변경</h3>
-    <input type="text" id="rename-input" autocomplete="off" spellcheck="false" />
+    <div class="rename-row">
+      <input type="text" id="rename-input" autocomplete="off" spellcheck="false" />
+      <span id="rename-ext"></span>
+    </div>
     <div class="dialog-buttons">
       <button class="btn-cancel" id="rename-cancel">취소</button>
       <button id="rename-confirm">변경</button>
