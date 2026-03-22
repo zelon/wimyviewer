@@ -83,6 +83,43 @@
       margin: 0 4px;
     }
 
+    /* ── 윈도우 컨트롤 버튼 ── */
+    .win-controls {
+      display: flex;
+      align-items: center;
+      margin-left: 8px;
+    }
+
+    .win-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 36px;
+      background: none;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      font-size: 10px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .win-btn svg {
+      width: 10px;
+      height: 10px;
+      fill: currentColor;
+    }
+
+    .win-btn:hover {
+      background: #1e1e28;
+      color: #ccc;
+    }
+
+    #win-close:hover {
+      background: #c0392b;
+      color: #fff;
+    }
+
     /* ── 캔버스 영역 ── */
     #canvas-container {
       flex: 1;
@@ -397,6 +434,17 @@
       <div class="toolbar-sep"></div>
       <button id="zoom-actual" class="tool-btn" title="실제 크기 (1)">1:1</button>
       <button id="zoom-fit" class="tool-btn" title="화면 맞춤 (0)">Fit</button>
+    </div>
+    <div class="win-controls">
+      <button id="win-minimize" class="win-btn" title="최소화">
+        <svg viewBox="0 0 10 1"><rect width="10" height="1"/></svg>
+      </button>
+      <button id="win-maximize" class="win-btn" title="최대화">
+        <svg viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <button id="win-close" class="win-btn" title="닫기">
+        <svg viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
     </div>
   </div>
 

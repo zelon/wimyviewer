@@ -319,6 +319,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (filePaths.length > 0) enableFitMode();
   });
 
+  // --- 윈도우 컨트롤 ---
+  document.getElementById('win-minimize').addEventListener('click', () => appWindow.minimize());
+  document.getElementById('win-maximize').addEventListener('click', () => appWindow.toggleMaximize());
+  document.getElementById('win-close').addEventListener('click', () => appWindow.close());
+
   // --- 네비게이션 화살표 ---
   navPrev.addEventListener('click', () => navigate(currentIndex - 1));
   navNext.addEventListener('click', () => navigate(currentIndex + 1));
