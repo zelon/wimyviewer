@@ -207,11 +207,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- 파일 열기 ---
-  openFolderBtn.addEventListener('click', async () => {
-    const selectedFile = await invoke('select_file').catch(() => null);
-    if (!selectedFile) return;
-
-    // 선택한 파일의 폴더 경로 추출
+  async function openFileByPath(selectedFile) {
     const sep = selectedFile.includes('\\') ? '\\' : '/';
     const dir = selectedFile.substring(0, selectedFile.lastIndexOf(sep));
 
@@ -230,7 +226,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     cache.clear();
     zoomLevel = 1.0;
 
-    // 선택한 파일의 인덱스 찾기 (없으면 0)
     const startIndex = Math.max(0, paths.indexOf(selectedFile));
     currentIndex = startIndex;
     showSpinner(spinner);
@@ -245,7 +240,19 @@ window.addEventListener('DOMContentLoaded', async () => {
       statusBar.textContent = `이미지 로드 실패: ${e}`;
     }
     schedulePreload(startIndex);
+  }
+
+  openFolderBtn.addEventListener('click', async () => {
+    const selectedFile = await invoke('select_file').catch(() => null);
+    if (!selectedFile) return;
+    await openFileByPath(selectedFile);
   });
+
+  // 시작 인자로 파일이 전달된 경우 자동으로 열기
+  const startupFile = await invoke('get_startup_file').catch(() => null);
+  if (startupFile) {
+    await openFileByPath(startupFile);
+  }
 
   // --- 키보드 ---
   window.addEventListener('keydown', async (e) => {

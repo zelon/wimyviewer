@@ -85,6 +85,19 @@ pub fn rename_file(old_path: String, new_name: String) -> Result<String, String>
 }
 
 #[tauri::command]
+pub fn get_startup_file() -> Option<String> {
+    std::env::args().nth(1).filter(|arg| {
+        let path = std::path::Path::new(arg);
+        path.is_file()
+            && path
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| SUPPORTED_EXTENSIONS.contains(&e.to_lowercase().as_str()))
+                .unwrap_or(false)
+    })
+}
+
+#[tauri::command]
 pub fn show_in_explorer(path: String) -> Result<(), String> {
     std::process::Command::new("explorer")
         .arg(format!("/select,{}", path))
