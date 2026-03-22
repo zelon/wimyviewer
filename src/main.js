@@ -28,7 +28,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   let filePaths = [];
   let currentIndex = 0;
   let zoomLevel = 1.0;
-  let fitMode = false;
+  let fitMode = localStorage.getItem('fitMode') === 'true';
   let isDragging = false, dragStartX = 0, dragStartY = 0;
   const cache = new SlidingWindowCache(2);
 
@@ -132,6 +132,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   function enableFitMode() {
     fitMode = true;
+    localStorage.setItem('fitMode', 'true');
     zoomLevel = calcFitZoom();
     updateLayout();
     centerScroll();
@@ -139,15 +140,15 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.addEventListener('resize', () => {
-    if (filePaths.length === 0) return;
-    if (fitMode) {
-      zoomLevel = calcFitZoom();
-    }
-    updateLayout();
+    if (filePaths.length > 0) updateLayout();
   });
 
   // --- 줌 + 패닝 ---
   function updateLayout() {
+    if (fitMode && canvas.width > 0 && canvas.height > 0) {
+      zoomLevel = calcFitZoom();
+      updateStatus();
+    }
     const iw = canvas.width * zoomLevel;
     const ih = canvas.height * zoomLevel;
     const cw = canvasContainer.clientWidth;
@@ -304,7 +305,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       case 'f':          e.preventDefault(); await toggleFullscreen(); break;
       case '1':
         e.preventDefault();
-        if (filePaths.length > 0) { fitMode = false; zoomLevel = 1.0; updateLayout(); centerScroll(); updateStatus(); }
+        if (filePaths.length > 0) { fitMode = false; localStorage.setItem('fitMode', 'false'); zoomLevel = 1.0; updateLayout(); centerScroll(); updateStatus(); }
         break;
       case '0':
         e.preventDefault();
@@ -324,6 +325,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     if (e.ctrlKey) {
       fitMode = false;
+      localStorage.setItem('fitMode', 'false');
       const oldZoom = zoomLevel;
       const cw = canvasContainer.clientWidth;
       const ch = canvasContainer.clientHeight;
