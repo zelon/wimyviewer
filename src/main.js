@@ -317,6 +317,12 @@ window.addEventListener('DOMContentLoaded', async () => {
       case 'Escape':
         if (isFullscreen) { e.preventDefault(); await toggleFullscreen(); }
         break;
+      case 'x':
+        if (e.altKey) { e.preventDefault(); await appWindow.close(); }
+        break;
+      case 'w':
+        if (e.ctrlKey) { e.preventDefault(); await appWindow.close(); }
+        break;
     }
   });
 
