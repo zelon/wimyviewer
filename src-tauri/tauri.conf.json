@@ -1,7 +1,7 @@
 {
   "productName": "WimyViewer",
-  "version": "0.1.0",
-  "identifier": "com.wimyviewer.app",
+  "version": "1.0.0",
+  "identifier": "com.wimysoft.wimyviewer",
   "build": {
     "frontendDist": "../src"
   },
