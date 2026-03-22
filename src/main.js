@@ -206,10 +206,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     statusBar.textContent = `${filename}  |  ${currentIndex + 1} / ${filePaths.length}  |  ${zoomPct}%`;
   }
 
-  // --- 폴더 열기 ---
+  // --- 파일 열기 ---
   openFolderBtn.addEventListener('click', async () => {
-    const dir = await invoke('select_folder').catch(() => null);
-    if (!dir) return;
+    const selectedFile = await invoke('select_file').catch(() => null);
+    if (!selectedFile) return;
+
+    // 선택한 파일의 폴더 경로 추출
+    const sep = selectedFile.includes('\\') ? '\\' : '/';
+    const dir = selectedFile.substring(0, selectedFile.lastIndexOf(sep));
 
     const paths = await invoke('load_directory', { dirPath: dir }).catch(e => {
       statusBar.textContent = `디렉토리 로드 실패: ${e}`;
@@ -224,21 +228,23 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     filePaths = paths;
     cache.clear();
-    currentIndex = 0;
     zoomLevel = 1.0;
+
+    // 선택한 파일의 인덱스 찾기 (없으면 0)
+    const startIndex = Math.max(0, paths.indexOf(selectedFile));
+    currentIndex = startIndex;
     showSpinner(spinner);
     updateStatus();
 
-    // 현재 이미지 로드 후 주변 프리로드
     try {
-      const bitmap = await loadBitmap(0);
-      cache.set(0, bitmap);
+      const bitmap = await loadBitmap(startIndex);
+      cache.set(startIndex, bitmap);
       renderCurrentImage();
     } catch (e) {
       hideSpinner(spinner);
       statusBar.textContent = `이미지 로드 실패: ${e}`;
     }
-    schedulePreload(0);
+    schedulePreload(startIndex);
   });
 
   // --- 키보드 ---

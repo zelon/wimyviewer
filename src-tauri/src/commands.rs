@@ -6,6 +6,22 @@ const SUPPORTED_EXTENSIONS: &[&str] =
     &["jpg", "jpeg", "png", "bmp", "ico", "psd", "gif", "webp"];
 
 #[tauri::command]
+pub async fn select_file(app: AppHandle) -> Option<String> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    app.dialog()
+        .file()
+        .add_filter("이미지", SUPPORTED_EXTENSIONS)
+        .pick_file(move |result| {
+            let _ = tx.send(result);
+        });
+    tauri::async_runtime::spawn_blocking(move || {
+        rx.recv().ok().flatten().map(|p| p.to_string())
+    })
+    .await
+    .ok()
+    .flatten()}
+
+#[tauri::command]
 pub async fn select_folder(app: AppHandle) -> Option<String> {
     let (tx, rx) = std::sync::mpsc::channel();
     app.dialog()
