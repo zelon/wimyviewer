@@ -1,12 +1,12 @@
 [package]
-name = "wimy-viewer"
+name = "wimyviewer"
 version = "0.1.0"
 edition = "2021"
 
 [package.metadata.tauri]
 
 [lib]
-name = "wimy_viewer_lib"
+name = "wimyviewer_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
