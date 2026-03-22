@@ -4,6 +4,7 @@ import { renderImage, showSpinner, hideSpinner } from './renderer.js';
 window.addEventListener('DOMContentLoaded', async () => {
   const { invoke, convertFileSrc } = window.__TAURI__.core;
   const { listen } = window.__TAURI__.event;
+  const appWindow = window.__TAURI__.window.getCurrentWindow();
 
   // --- DOM 요소 ---
   const canvas = document.getElementById('viewer');
@@ -110,6 +111,20 @@ window.addEventListener('DOMContentLoaded', async () => {
     hideSpinner(spinner);
     updateStatus();
   }
+
+  // --- 풀스크린 ---
+  let isFullscreen = false;
+
+  async function toggleFullscreen() {
+    isFullscreen = !isFullscreen;
+    await appWindow.setFullscreen(isFullscreen);
+    document.getElementById('toolbar').style.display = isFullscreen ? 'none' : '';
+    document.getElementById('status-bar').style.display = isFullscreen ? 'none' : '';
+  }
+
+  window.addEventListener('resize', () => {
+    if (filePaths.length > 0) updateLayout();
+  });
 
   // --- 줌 + 패닝 ---
   function updateLayout() {
@@ -264,6 +279,14 @@ window.addEventListener('DOMContentLoaded', async () => {
       case 'End':        e.preventDefault(); await navigate(filePaths.length - 1); break;
       case 'Delete':     e.preventDefault(); showDeleteDialog(); break;
       case 'F2':         e.preventDefault(); showRenameDialog(); break;
+      case 'F11':        e.preventDefault(); await toggleFullscreen(); break;
+      case 'f':          e.preventDefault(); await toggleFullscreen(); break;
+      case 'Enter':
+        if (e.altKey) { e.preventDefault(); await toggleFullscreen(); }
+        break;
+      case 'Escape':
+        if (isFullscreen) { e.preventDefault(); await toggleFullscreen(); }
+        break;
     }
   });
 

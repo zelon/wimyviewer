@@ -11,6 +11,8 @@
     "core:menu:default",
     "core:tray:default",
     "core:webview:default",
-    "dialog:allow-open"
+    "dialog:allow-open",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen"
   ]
 }
