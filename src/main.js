@@ -4,7 +4,9 @@ import { renderImage, showSpinner, hideSpinner } from './renderer.js';
 window.addEventListener('DOMContentLoaded', async () => {
   const { invoke, convertFileSrc } = window.__TAURI__.core;
   const { listen } = window.__TAURI__.event;
-  const appWindow = window.__TAURI__.window.getCurrentWindow();
+  const { getCurrentWindow } = window.__TAURI__.window;
+  const { PhysicalSize, PhysicalPosition } = window.__TAURI__.dpi;
+  const appWindow = getCurrentWindow();
 
   // --- DOM 요소 ---
   const canvas = document.getElementById('viewer');
@@ -357,6 +359,44 @@ window.addEventListener('DOMContentLoaded', async () => {
   rotateBtn.addEventListener('click', () => rotateView(90));
   saveBtn.addEventListener('click', saveRotated);
 
+  // --- 창 상태 저장/복원 ---
+  async function saveWindowState() {
+    const maximized = await appWindow.isMaximized();
+    if (maximized) {
+      localStorage.setItem('windowState', JSON.stringify({ maximized: true }));
+    } else {
+      const size = await appWindow.outerSize();
+      const pos = await appWindow.outerPosition();
+      localStorage.setItem('windowState', JSON.stringify({
+        maximized: false,
+        width: size.width,
+        height: size.height,
+        x: pos.x,
+        y: pos.y,
+      }));
+    }
+  }
+
+  async function restoreWindowState() {
+    const raw = localStorage.getItem('windowState');
+    if (!raw) return;
+    try {
+      const state = JSON.parse(raw);
+      if (state.maximized) {
+        await appWindow.maximize();
+      } else if (state.width && state.height) {
+        await appWindow.setSize(new PhysicalSize(state.width, state.height));
+        if (state.x != null && state.y != null) {
+          await appWindow.setPosition(new PhysicalPosition(state.x, state.y));
+        }
+      }
+    } catch (e) {
+      console.warn('창 상태 복원 실패:', e);
+    }
+  }
+
+  await restoreWindowState();
+
   // --- 윈도우 컨트롤 ---
   const winMaximizeBtn = document.getElementById('win-maximize');
 
@@ -377,6 +417,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('win-close').addEventListener('click', () => appWindow.close());
 
   await listen('tauri://resize', syncMaximizeIcon);
+  await appWindow.onCloseRequested(async (event) => {
+    event.preventDefault();
+    await saveWindowState();
+    await appWindow.destroy();
+  });
   await syncMaximizeIcon();
 
   // --- 네비게이션 화살표 ---
