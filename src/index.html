@@ -71,6 +71,16 @@
       color: #ddd;
     }
 
+    .tool-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .tool-btn:disabled:hover {
+      background: none;
+      color: #666;
+    }
+
     .tool-btn.active {
       color: #7c8dfa;
       background: rgba(92, 107, 250, 0.12);
@@ -434,6 +444,9 @@
       <div class="toolbar-sep"></div>
       <button id="zoom-actual" class="tool-btn" title="실제 크기 (1)">1:1</button>
       <button id="zoom-fit" class="tool-btn" title="화면 맞춤 (0)">Fit</button>
+      <div class="toolbar-sep"></div>
+      <button id="rotate-btn" class="tool-btn" title="시계 방향 90도 회전 (R)">회전</button>
+      <button id="save-btn" class="tool-btn" title="회전된 상태로 파일 저장" disabled>저장</button>
     </div>
     <div class="win-controls">
       <button id="win-minimize" class="win-btn" title="최소화">

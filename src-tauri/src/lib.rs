@@ -1,7 +1,7 @@
 mod commands;
 mod decoder;
 
-use commands::{delete_file, get_startup_file, load_directory, prepare_psd, rename_file, select_file, select_folder, show_in_explorer};
+use commands::{delete_file, get_startup_file, load_directory, prepare_psd, rename_file, rotate_and_save, select_file, select_folder, show_in_explorer};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,6 +15,7 @@ pub fn run() {
             prepare_psd,
             delete_file,
             rename_file,
+            rotate_and_save,
             show_in_explorer,
         ])
         .run(tauri::generate_context!())

@@ -20,6 +20,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const zoomActualBtn = document.getElementById('zoom-actual');
   const zoomFitBtn = document.getElementById('zoom-fit');
   const openFolderBtn = document.getElementById('open-folder');
+  const rotateBtn = document.getElementById('rotate-btn');
+  const saveBtn = document.getElementById('save-btn');
   const deleteDialog = document.getElementById('delete-dialog');
   const deleteFilename = document.getElementById('delete-filename');
   const deleteConfirmBtn = document.getElementById('delete-confirm');
@@ -38,6 +40,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   let zoomLevel = 1.0;
   let fitMode = localStorage.getItem('fitMode') === 'true';
   let isDragging = false, dragStartX = 0, dragStartY = 0;
+  let rotationAngle = 0; // 0, 90, 180, 270
   const cache = new SlidingWindowCache(2);
 
   // --- 이미지 로드 ---
@@ -83,6 +86,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (index === currentIndex && cache.has(index)) return;
 
     currentIndex = index;
+    rotationAngle = 0;
+    saveBtn.disabled = true;
     updateStatus();
 
     if (cache.has(currentIndex)) {
@@ -114,11 +119,40 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   function renderCurrentImage() {
     if (!cache.has(currentIndex)) return;
-    renderImage(canvas, cache.get(currentIndex));
+    renderImage(canvas, cache.get(currentIndex), rotationAngle);
     updateLayout();
     centerScroll();
     hideSpinner(spinner);
     updateStatus();
+  }
+
+  function rotateView(delta = 90) {
+    if (filePaths.length === 0) return;
+    rotationAngle = ((rotationAngle + delta) % 360 + 360) % 360;
+    saveBtn.disabled = rotationAngle === 0;
+    renderCurrentImage();
+  }
+
+  async function saveRotated() {
+    if (filePaths.length === 0 || rotationAngle === 0) return;
+    saveBtn.disabled = true;
+    try {
+      // Rust가 저장 후 회전된 이미지를 base64 PNG로 반환 → 브라우저 캐시 문제 없이 바로 사용
+      const b64 = await invoke('rotate_and_save', { path: filePaths[currentIndex], degrees: rotationAngle });
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: 'image/png' });
+      const bitmap = await createImageBitmap(blob);
+      cache.invalidate(currentIndex);
+      rotationAngle = 0;
+      saveBtn.disabled = true;
+      updateStatus();
+      cache.set(currentIndex, bitmap);
+      renderCurrentImage();
+      schedulePreload(currentIndex);
+    } catch (e) {
+      alert(`저장 실패: ${e}`);
+      saveBtn.disabled = false;
+    }
   }
 
   // --- 풀스크린 ---
@@ -255,7 +289,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     const zoomPct = Math.round(zoomLevel * 100);
     statusFilename.textContent = filename;
     statusCounter.textContent = `${currentIndex + 1} / ${filePaths.length}`;
-    statusZoom.textContent = fitMode ? `Fit (${zoomPct}%)` : `${zoomPct}%`;
+    const rotPrefix = rotationAngle !== 0 ? `(${rotationAngle}도) ` : '';
+    statusZoom.textContent = fitMode ? `${rotPrefix}Fit (${zoomPct}%)` : `${rotPrefix}${zoomPct}%`;
     progressSlider.max = filePaths.length - 1;
     progressSlider.value = currentIndex;
     zoomFitBtn.classList.toggle('active', fitMode);
@@ -318,6 +353,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   zoomFitBtn.addEventListener('click', () => {
     if (filePaths.length > 0) enableFitMode();
   });
+
+  rotateBtn.addEventListener('click', () => rotateView(90));
+  saveBtn.addEventListener('click', saveRotated);
 
   // --- 윈도우 컨트롤 ---
   const winMaximizeBtn = document.getElementById('win-maximize');
@@ -398,6 +436,12 @@ window.addEventListener('DOMContentLoaded', async () => {
       case 'Escape':
         if (isFullscreen) { e.preventDefault(); await toggleFullscreen(); }
         break;
+      case 'r':
+      case 'R':
+      case ']':
+        e.preventDefault(); rotateView(90); break;
+      case '[':
+        e.preventDefault(); rotateView(-90); break;
       case 'x':
         if (e.altKey) { e.preventDefault(); await appWindow.close(); }
         break;

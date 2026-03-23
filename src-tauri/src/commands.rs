@@ -98,6 +98,49 @@ pub fn get_startup_file() -> Option<String> {
 }
 
 #[tauri::command]
+pub fn rotate_and_save(path: String, degrees: i32) -> Result<String, String> {
+    let ext = std::path::Path::new(&path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_lowercase())
+        .unwrap_or_default();
+
+    if ext == "psd" {
+        return Err("PSD 파일은 회전 저장을 지원하지 않습니다".to_string());
+    }
+
+    let fmt = image::ImageFormat::from_extension(&ext)
+        .ok_or_else(|| format!("지원하지 않는 이미지 형식: {ext}"))?;
+
+    let img = image::open(&path).map_err(|e| format!("이미지 열기 실패: {e}"))?;
+
+    let rotated = match ((degrees % 360) + 360) % 360 {
+        90 => img.rotate90(),
+        180 => img.rotate180(),
+        270 => img.rotate270(),
+        _ => img,
+    };
+
+    // 원본 포맷으로 인코딩 후 std::fs::write 로 명시적으로 파일에 씁니다
+    let mut file_buf = Vec::new();
+    rotated
+        .write_to(&mut std::io::Cursor::new(&mut file_buf), fmt)
+        .map_err(|e| format!("인코딩 실패: {e}"))?;
+    std::fs::write(&path, &file_buf)
+        .map_err(|e| format!("파일 쓰기 실패: {e} (경로: {path})"))?;
+
+    // JS 캐시용 PNG base64 반환 (브라우저 캐시 우회)
+    let mut png_buf = Vec::new();
+    rotated
+        .write_to(
+            &mut std::io::Cursor::new(&mut png_buf),
+            image::ImageFormat::Png,
+        )
+        .map_err(|e| format!("PNG 인코딩 실패: {e}"))?;
+    Ok(base64::engine::general_purpose::STANDARD.encode(&png_buf))
+}
+
+#[tauri::command]
 pub fn show_in_explorer(path: String) -> Result<(), String> {
     std::process::Command::new("explorer")
         .arg(format!("/select,{}", path))
