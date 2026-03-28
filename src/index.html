@@ -131,8 +131,15 @@
     }
 
     /* ── 캔버스 영역 ── */
-    #canvas-container {
+    #viewer-wrapper {
       flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #canvas-container {
+      width: 100%;
+      height: 100%;
       overflow: auto;
       position: relative;
     }
@@ -192,7 +199,7 @@
     #nav-prev { left: 12px; }
     #nav-next { right: 12px; }
 
-    #canvas-container:hover .nav-arrow {
+    #viewer-wrapper:hover .nav-arrow {
       opacity: 1;
     }
 
@@ -462,12 +469,14 @@
   </div>
 
   <!-- 이미지 표시 영역 -->
-  <div id="canvas-container">
-    <div id="canvas-inner">
-      <canvas id="viewer"></canvas>
-    </div>
-    <div id="spinner">
-      <div class="spinner-ring"></div>
+  <div id="viewer-wrapper">
+    <div id="canvas-container">
+      <div id="canvas-inner">
+        <canvas id="viewer"></canvas>
+      </div>
+      <div id="spinner">
+        <div class="spinner-ring"></div>
+      </div>
     </div>
     <button id="nav-prev" class="nav-arrow">&#8249;</button>
     <button id="nav-next" class="nav-arrow">&#8250;</button>
