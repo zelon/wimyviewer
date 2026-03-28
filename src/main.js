@@ -43,7 +43,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   let fitMode = localStorage.getItem('fitMode') === 'true';
   let isDragging = false, dragStartX = 0, dragStartY = 0;
   let rotationAngle = 0; // 0, 90, 180, 270
-  const cache = new SlidingWindowCache(2);
+  const cache = new SlidingWindowCache(5);
 
   // --- 이미지 로드 ---
   // JPG/PNG/BMP/GIF/WebP/ICO: convertFileSrc → asset:// URL → 브라우저 네이티브 디코딩

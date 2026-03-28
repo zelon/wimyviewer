@@ -23,8 +23,8 @@ export class SlidingWindowCache {
   }
 
   evict(currentIndex) {
-    const min = currentIndex - this.PRELOAD_RADIUS - 1;
-    const max = currentIndex + this.PRELOAD_RADIUS + 1;
+    const min = currentIndex - this.PRELOAD_RADIUS - 2;
+    const max = currentIndex + this.PRELOAD_RADIUS + 2;
     for (const key of this.cache.keys()) {
       if (key < min || key > max) {
         this.cache.get(key)?.close?.();
