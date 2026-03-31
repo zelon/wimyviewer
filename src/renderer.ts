@@ -1,4 +1,4 @@
-export function renderImage(canvas, bitmap, rotation = 0) {
+export function renderImage(canvas: HTMLCanvasElement, bitmap: ImageBitmap, rotation = 0): void {
   const rot = ((rotation % 360) + 360) % 360;
   if (rot === 90 || rot === 270) {
     canvas.width = bitmap.height;
@@ -7,7 +7,7 @@ export function renderImage(canvas, bitmap, rotation = 0) {
     canvas.width = bitmap.width;
     canvas.height = bitmap.height;
   }
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d')!;
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.rotate((rot * Math.PI) / 180);
@@ -15,10 +15,10 @@ export function renderImage(canvas, bitmap, rotation = 0) {
   ctx.restore();
 }
 
-export function showSpinner(spinner) {
+export function showSpinner(spinner: HTMLElement): void {
   spinner.style.display = 'flex';
 }
 
-export function hideSpinner(spinner) {
+export function hideSpinner(spinner: HTMLElement): void {
   spinner.style.display = 'none';
 }

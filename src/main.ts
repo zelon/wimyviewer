@@ -1,59 +1,62 @@
-import { SlidingWindowCache } from './cache.js';
-import { renderImage, showSpinner, hideSpinner } from './renderer.js';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { PhysicalSize, PhysicalPosition } from '@tauri-apps/api/dpi';
+import { SlidingWindowCache } from './cache';
+import { renderImage, showSpinner, hideSpinner } from './renderer';
+import type { DragDropPayload, WindowState } from './types';
 
 window.addEventListener('DOMContentLoaded', async () => {
-  const { invoke, convertFileSrc } = window.__TAURI__.core;
-  const { listen } = window.__TAURI__.event;
-  const { getCurrentWindow } = window.__TAURI__.window;
-  const { PhysicalSize, PhysicalPosition } = window.__TAURI__.dpi;
   const appWindow = getCurrentWindow();
 
   // --- DOM 요소 ---
-  const canvas = document.getElementById('viewer');
-  const canvasContainer = document.getElementById('canvas-container');
-  const canvasInner = document.getElementById('canvas-inner');
-  const spinner = document.getElementById('spinner');
-  const statusFilename = document.getElementById('status-filename');
-  const statusCounter = document.getElementById('status-counter');
-  const statusZoom = document.getElementById('status-zoom');
-  const progressSlider = document.getElementById('progress-slider');
-  const navPrev = document.getElementById('nav-prev');
-  const navNext = document.getElementById('nav-next');
-  const zoomActualBtn = document.getElementById('zoom-actual');
-  const zoomFitBtn = document.getElementById('zoom-fit');
-  const openFolderBtn = document.getElementById('open-folder');
-  const rotateBtn = document.getElementById('rotate-btn');
-  const saveBtn = document.getElementById('save-btn');
-  const deleteDialog = document.getElementById('delete-dialog');
-  const deleteFilename = document.getElementById('delete-filename');
-  const deleteConfirmBtn = document.getElementById('delete-confirm');
-  const deleteCancelBtn = document.getElementById('delete-cancel');
-  const renameDialog = document.getElementById('rename-dialog');
-  const renameInput = document.getElementById('rename-input');
-  const renameExtSpan = document.getElementById('rename-ext');
-  const renameConfirmBtn = document.getElementById('rename-confirm');
-  const renameCancelBtn = document.getElementById('rename-cancel');
-  const contextMenu = document.getElementById('context-menu');
-  const ctxShowInExplorer = document.getElementById('ctx-show-in-explorer');
+  const canvas = document.getElementById('viewer') as HTMLCanvasElement;
+  const canvasContainer = document.getElementById('canvas-container') as HTMLElement;
+  const canvasInner = document.getElementById('canvas-inner') as HTMLElement;
+  const spinner = document.getElementById('spinner') as HTMLElement;
+  const statusFilename = document.getElementById('status-filename') as HTMLElement;
+  const statusCounter = document.getElementById('status-counter') as HTMLElement;
+  const statusZoom = document.getElementById('status-zoom') as HTMLElement;
+  const progressSlider = document.getElementById('progress-slider') as HTMLInputElement;
+  const navPrev = document.getElementById('nav-prev') as HTMLButtonElement;
+  const navNext = document.getElementById('nav-next') as HTMLButtonElement;
+  const zoomActualBtn = document.getElementById('zoom-actual') as HTMLButtonElement;
+  const zoomFitBtn = document.getElementById('zoom-fit') as HTMLButtonElement;
+  const openFolderBtn = document.getElementById('open-folder') as HTMLButtonElement;
+  const rotateBtn = document.getElementById('rotate-btn') as HTMLButtonElement;
+  const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
+  const deleteDialog = document.getElementById('delete-dialog') as HTMLDialogElement;
+  const deleteFilename = document.getElementById('delete-filename') as HTMLElement;
+  const deleteConfirmBtn = document.getElementById('delete-confirm') as HTMLButtonElement;
+  const deleteCancelBtn = document.getElementById('delete-cancel') as HTMLButtonElement;
+  const renameDialog = document.getElementById('rename-dialog') as HTMLDialogElement;
+  const renameInput = document.getElementById('rename-input') as HTMLInputElement;
+  const renameExtSpan = document.getElementById('rename-ext') as HTMLElement;
+  const renameConfirmBtn = document.getElementById('rename-confirm') as HTMLButtonElement;
+  const renameCancelBtn = document.getElementById('rename-cancel') as HTMLButtonElement;
+  const contextMenu = document.getElementById('context-menu') as HTMLElement;
+  const ctxShowInExplorer = document.getElementById('ctx-show-in-explorer') as HTMLButtonElement;
 
   // --- 상태 ---
-  let filePaths = [];
+  let filePaths: string[] = [];
   let currentIndex = 0;
   let zoomLevel = 1.0;
   let fitMode = localStorage.getItem('fitMode') === 'true';
-  let isDragging = false, dragStartX = 0, dragStartY = 0;
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
   let rotationAngle = 0; // 0, 90, 180, 270
-  const cache = new SlidingWindowCache(5);
+  const cache = new SlidingWindowCache<ImageBitmap>(5);
 
   // --- 이미지 로드 ---
   // JPG/PNG/BMP/GIF/WebP/ICO: convertFileSrc → asset:// URL → 브라우저 네이티브 디코딩
   // PSD: Rust 디코딩 → base64 PNG → Blob → createImageBitmap
-  async function loadBitmap(index) {
+  async function loadBitmap(index: number): Promise<ImageBitmap> {
     const path = filePaths[index];
-    const ext = path.replace(/\\/g, '/').split('.').pop().toLowerCase();
+    const ext = path.replace(/\\/g, '/').split('.').pop()!.toLowerCase();
 
     if (ext === 'psd') {
-      const b64 = await invoke('prepare_psd', { path });
+      const b64 = await invoke<string>('prepare_psd', { path });
       const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: 'image/png' });
       return createImageBitmap(blob);
@@ -68,7 +71,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- 프리로드 (fire-and-forget) ---
-  async function preloadImage(index) {
+  async function preloadImage(index: number): Promise<void> {
     if (index < 0 || index >= filePaths.length) return;
     if (cache.has(index)) return;
 
@@ -82,7 +85,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- 네비게이션 ---
-  async function navigate(index) {
+  async function navigate(index: number): Promise<void> {
     if (filePaths.length === 0) return;
     index = Math.max(0, Math.min(filePaths.length - 1, index));
     if (index === currentIndex && cache.has(index)) return;
@@ -111,7 +114,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // 주변 이미지 프리로드 (동시 실행, 비블로킹)
-  function schedulePreload(index) {
+  function schedulePreload(index: number): void {
     cache.evict(index);
     const needed = cache.getNeeded(index, filePaths.length);
     for (const i of needed) {
@@ -119,28 +122,28 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function renderCurrentImage() {
+  function renderCurrentImage(): void {
     if (!cache.has(currentIndex)) return;
-    renderImage(canvas, cache.get(currentIndex), rotationAngle);
+    renderImage(canvas, cache.get(currentIndex)!, rotationAngle);
     updateLayout();
     centerScroll();
     hideSpinner(spinner);
     updateStatus();
   }
 
-  function rotateView(delta = 90) {
+  function rotateView(delta = 90): void {
     if (filePaths.length === 0) return;
     rotationAngle = ((rotationAngle + delta) % 360 + 360) % 360;
     saveBtn.disabled = rotationAngle === 0;
     renderCurrentImage();
   }
 
-  async function saveRotated() {
+  async function saveRotated(): Promise<void> {
     if (filePaths.length === 0 || rotationAngle === 0) return;
     saveBtn.disabled = true;
     try {
       // Rust가 저장 후 회전된 이미지를 base64 PNG로 반환 → 브라우저 캐시 문제 없이 바로 사용
-      const b64 = await invoke('rotate_and_save', { path: filePaths[currentIndex], degrees: rotationAngle });
+      const b64 = await invoke<string>('rotate_and_save', { path: filePaths[currentIndex], degrees: rotationAngle });
       const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: 'image/png' });
       const bitmap = await createImageBitmap(blob);
@@ -160,21 +163,21 @@ window.addEventListener('DOMContentLoaded', async () => {
   // --- 풀스크린 ---
   let isFullscreen = false;
 
-  async function toggleFullscreen() {
+  async function toggleFullscreen(): Promise<void> {
     isFullscreen = !isFullscreen;
     await appWindow.setFullscreen(isFullscreen);
-    document.getElementById('toolbar').style.display = isFullscreen ? 'none' : '';
-    document.getElementById('status-bar').style.display = isFullscreen ? 'none' : '';
+    (document.getElementById('toolbar') as HTMLElement).style.display = isFullscreen ? 'none' : '';
+    (document.getElementById('status-bar') as HTMLElement).style.display = isFullscreen ? 'none' : '';
   }
 
-  function calcFitZoom() {
+  function calcFitZoom(): number {
     return Math.min(
       canvasContainer.clientWidth / canvas.width,
       canvasContainer.clientHeight / canvas.height
     );
   }
 
-  function enableFitMode() {
+  function enableFitMode(): void {
     fitMode = true;
     localStorage.setItem('fitMode', 'true');
     zoomLevel = calcFitZoom();
@@ -188,7 +191,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   // --- 줌 + 패닝 ---
-  function updateLayout() {
+  function updateLayout(): void {
     if (fitMode && canvas.width > 0 && canvas.height > 0) {
       zoomLevel = calcFitZoom();
       updateStatus();
@@ -205,26 +208,26 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateCursor();
   }
 
-  function centerScroll() {
+  function centerScroll(): void {
     const iw = canvas.width * zoomLevel;
     const ih = canvas.height * zoomLevel;
     canvasContainer.scrollLeft = Math.max(0, (iw - canvasContainer.clientWidth) / 2);
     canvasContainer.scrollTop = Math.max(0, (ih - canvasContainer.clientHeight) / 2);
   }
 
-  function isImageLargerThanViewport() {
+  function isImageLargerThanViewport(): boolean {
     return canvas.width * zoomLevel > canvasContainer.clientWidth ||
            canvas.height * zoomLevel > canvasContainer.clientHeight;
   }
 
-  function updateCursor() {
+  function updateCursor(): void {
     if (isDragging) canvas.style.cursor = 'grabbing';
     else if (isImageLargerThanViewport()) canvas.style.cursor = 'grab';
     else canvas.style.cursor = 'default';
   }
 
   // 드래그로 패닝
-  canvas.addEventListener('mousedown', (e) => {
+  canvas.addEventListener('mousedown', (e: MouseEvent) => {
     if (e.button !== 0 || !isImageLargerThanViewport()) return;
     isDragging = true;
     dragStartX = e.clientX + canvasContainer.scrollLeft;
@@ -233,24 +236,24 @@ window.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
   });
 
-  window.addEventListener('mousemove', (e) => {
+  window.addEventListener('mousemove', (e: MouseEvent) => {
     if (!isDragging) return;
     canvasContainer.scrollLeft = dragStartX - e.clientX;
     canvasContainer.scrollTop = dragStartY - e.clientY;
   });
 
-  window.addEventListener('mouseup', (e) => {
+  window.addEventListener('mouseup', (e: MouseEvent) => {
     if (e.button !== 0 || !isDragging) return;
     isDragging = false;
     updateCursor();
   });
 
   // --- 컨텍스트 메뉴 ---
-  function hideContextMenu() {
+  function hideContextMenu(): void {
     contextMenu.style.display = 'none';
   }
 
-  canvas.addEventListener('contextmenu', (e) => {
+  canvas.addEventListener('contextmenu', (e: MouseEvent) => {
     if (filePaths.length === 0) return;
     e.preventDefault();
     const menuW = contextMenu.offsetWidth || 164;
@@ -264,47 +267,47 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   ctxShowInExplorer.addEventListener('click', () => {
     hideContextMenu();
-    invoke('show_in_explorer', { path: filePaths[currentIndex] }).catch(console.error);
+    invoke<void>('show_in_explorer', { path: filePaths[currentIndex] }).catch(console.error);
   });
 
-  window.addEventListener('mousedown', (e) => {
-    if (!contextMenu.contains(e.target)) hideContextMenu();
+  window.addEventListener('mousedown', (e: MouseEvent) => {
+    if (!contextMenu.contains(e.target as Node)) hideContextMenu();
   });
 
-  window.addEventListener('keydown', (e) => {
+  window.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Escape') hideContextMenu();
   }, true);
 
   // --- 상태바 ---
-  function updateStatus() {
+  function updateStatus(): void {
     if (filePaths.length === 0) {
       statusFilename.textContent = '이미지 없음';
       statusCounter.textContent = '—';
       statusZoom.textContent = '';
-      progressSlider.max = 0;
-      progressSlider.value = 0;
+      progressSlider.max = '0';
+      progressSlider.value = '0';
       zoomFitBtn.classList.remove('active');
       zoomActualBtn.classList.remove('active');
       return;
     }
-    const filename = filePaths[currentIndex].replace(/\\/g, '/').split('/').pop();
+    const filename = filePaths[currentIndex].replace(/\\/g, '/').split('/').pop()!;
     const zoomPct = Math.round(zoomLevel * 100);
     statusFilename.textContent = filename;
     statusCounter.textContent = `${currentIndex + 1} / ${filePaths.length}`;
     const rotPrefix = rotationAngle !== 0 ? `(${rotationAngle}도) ` : '';
     statusZoom.textContent = fitMode ? `${rotPrefix}Fit (${zoomPct}%)` : `${rotPrefix}${zoomPct}%`;
-    progressSlider.max = filePaths.length - 1;
-    progressSlider.value = currentIndex;
+    progressSlider.max = String(filePaths.length - 1);
+    progressSlider.value = String(currentIndex);
     zoomFitBtn.classList.toggle('active', fitMode);
     zoomActualBtn.classList.toggle('active', !fitMode && zoomLevel === 1.0);
   }
 
   // --- 파일 열기 ---
-  async function openFileByPath(selectedFile) {
+  async function openFileByPath(selectedFile: string): Promise<void> {
     const sep = selectedFile.includes('\\') ? '\\' : '/';
     const dir = selectedFile.substring(0, selectedFile.lastIndexOf(sep));
 
-    const paths = await invoke('load_directory', { dirPath: dir }).catch(e => {
+    const paths = await invoke<string[]>('load_directory', { dirPath: dir }).catch((e: unknown) => {
       statusFilename.textContent = `디렉토리 로드 실패: ${e}`;
       return null;
     });
@@ -336,7 +339,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   openFolderBtn.addEventListener('click', async () => {
-    const selectedFile = await invoke('select_file').catch(() => null);
+    const selectedFile = await invoke<string | null>('select_file').catch(() => null);
     if (!selectedFile) return;
     await openFileByPath(selectedFile);
   });
@@ -360,10 +363,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   saveBtn.addEventListener('click', saveRotated);
 
   // --- 창 상태 저장/복원 ---
-  async function saveWindowState() {
+  async function saveWindowState(): Promise<void> {
     const maximized = await appWindow.isMaximized();
     if (maximized) {
-      localStorage.setItem('windowState', JSON.stringify({ maximized: true }));
+      localStorage.setItem('windowState', JSON.stringify({ maximized: true } satisfies WindowState));
     } else {
       const size = await appWindow.outerSize();
       const pos = await appWindow.outerPosition();
@@ -373,15 +376,15 @@ window.addEventListener('DOMContentLoaded', async () => {
         height: size.height,
         x: pos.x,
         y: pos.y,
-      }));
+      } satisfies WindowState));
     }
   }
 
-  async function restoreWindowState() {
+  async function restoreWindowState(): Promise<void> {
     const raw = localStorage.getItem('windowState');
     if (!raw) return;
     try {
-      const state = JSON.parse(raw);
+      const state: WindowState = JSON.parse(raw);
       if (state.maximized) {
         await appWindow.maximize();
       } else if (state.width && state.height) {
@@ -398,23 +401,23 @@ window.addEventListener('DOMContentLoaded', async () => {
   await restoreWindowState();
 
   // --- 윈도우 컨트롤 ---
-  const winMaximizeBtn = document.getElementById('win-maximize');
+  const winMaximizeBtn = document.getElementById('win-maximize') as HTMLButtonElement;
 
   const ICON_MAXIMIZE = `<svg viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1"/></svg>`;
   const ICON_RESTORE  = `<svg viewBox="0 0 10 10"><rect x="2" y="0" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1"/><rect x="0" y="2" width="8" height="8" fill="#111114" stroke="currentColor" stroke-width="1"/></svg>`;
 
-  async function syncMaximizeIcon() {
+  async function syncMaximizeIcon(): Promise<void> {
     const maximized = await appWindow.isMaximized();
     winMaximizeBtn.innerHTML = maximized ? ICON_RESTORE : ICON_MAXIMIZE;
     winMaximizeBtn.title = maximized ? '이전 크기로' : '최대화';
   }
 
-  document.getElementById('win-minimize').addEventListener('click', () => appWindow.minimize());
+  document.getElementById('win-minimize')!.addEventListener('click', () => appWindow.minimize());
   winMaximizeBtn.addEventListener('click', async () => {
     await appWindow.toggleMaximize();
     await syncMaximizeIcon();
   });
-  document.getElementById('win-close').addEventListener('click', () => appWindow.close());
+  document.getElementById('win-close')!.addEventListener('click', () => appWindow.close());
 
   await listen('tauri://resize', syncMaximizeIcon);
   await appWindow.onCloseRequested(async (event) => {
@@ -429,19 +432,19 @@ window.addEventListener('DOMContentLoaded', async () => {
   navNext.addEventListener('click', () => navigate(currentIndex + 1));
 
   // --- 진행 슬라이더 ---
-  progressSlider.addEventListener('input', (e) => {
-    navigate(parseInt(e.target.value));
+  progressSlider.addEventListener('input', (e: Event) => {
+    navigate(parseInt((e.target as HTMLInputElement).value));
   });
 
   // 시작 인자로 파일이 전달된 경우 자동으로 열기
-  const startupFile = await invoke('get_startup_file').catch(() => null);
+  const startupFile = await invoke<string | null>('get_startup_file').catch(() => null);
   if (startupFile) {
     await openFileByPath(startupFile);
   }
 
   // --- 파일 드래그-드롭 ---
-  await listen('tauri://drag-drop', async (event) => {
-    const paths = event.payload?.paths ?? event.payload;
+  await listen<DragDropPayload>('tauri://drag-drop', async (event) => {
+    const paths = event.payload.paths;
     if (!Array.isArray(paths) || paths.length === 0) return;
     const supported = /\.(psd|png|jpg|jpeg|webp|bmp|gif|ico)$/i;
     const dropped = paths[0];
@@ -450,13 +453,13 @@ window.addEventListener('DOMContentLoaded', async () => {
       await openFileByPath(dropped);
     } else {
       // 폴더로 간주하고 디렉토리 내 첫 번째 파일 열기
-      const dirFiles = await invoke('load_directory', { dirPath: dropped }).catch(() => null);
+      const dirFiles = await invoke<string[]>('load_directory', { dirPath: dropped }).catch(() => null);
       if (dirFiles && dirFiles.length > 0) await openFileByPath(dirFiles[0]);
     }
   });
 
   // --- 키보드 ---
-  window.addEventListener('keydown', async (e) => {
+  window.addEventListener('keydown', async (e: KeyboardEvent) => {
     if (deleteDialog.open || renameDialog.open) return;
     switch (e.key) {
       case 'ArrowLeft':  e.preventDefault(); await navigate(currentIndex - 1); break;
@@ -497,7 +500,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   // --- 마우스 휠 ---
-  window.addEventListener('wheel', async (e) => {
+  window.addEventListener('wheel', async (e: WheelEvent) => {
     e.preventDefault();
     if (e.ctrlKey) {
       fitMode = false;
@@ -524,16 +527,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   }, { passive: false });
 
   // --- 삭제 팝업 ---
-  function showDeleteDialog() {
+  function showDeleteDialog(): void {
     if (filePaths.length === 0) return;
-    deleteFilename.textContent = filePaths[currentIndex].replace(/\\/g, '/').split('/').pop();
+    deleteFilename.textContent = filePaths[currentIndex].replace(/\\/g, '/').split('/').pop()!;
     deleteDialog.showModal();
   }
 
   deleteConfirmBtn.addEventListener('click', async () => {
     deleteDialog.close();
     try {
-      await invoke('delete_file', { path: filePaths[currentIndex] });
+      await invoke<void>('delete_file', { path: filePaths[currentIndex] });
     } catch (e) {
       alert(`삭제 실패: ${e}`);
       return;
@@ -560,9 +563,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   // --- 이름 변경 팝업 ---
   let renameExt = '';
 
-  function showRenameDialog() {
+  function showRenameDialog(): void {
     if (filePaths.length === 0) return;
-    const full = filePaths[currentIndex].replace(/\\/g, '/').split('/').pop();
+    const full = filePaths[currentIndex].replace(/\\/g, '/').split('/').pop()!;
     const dotIdx = full.lastIndexOf('.');
     if (dotIdx > 0) {
       renameExt = full.slice(dotIdx);          // e.g. ".png"
@@ -576,13 +579,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     renameInput.select();
   }
 
-  async function confirmRename() {
+  async function confirmRename(): Promise<void> {
     const baseName = renameInput.value.trim();
     if (!baseName) return;
     const newName = baseName + renameExt;
     renameDialog.close();
     try {
-      filePaths[currentIndex] = await invoke('rename_file', {
+      filePaths[currentIndex] = await invoke<string>('rename_file', {
         oldPath: filePaths[currentIndex],
         newName,
       });
@@ -594,7 +597,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   renameConfirmBtn.addEventListener('click', confirmRename);
   renameCancelBtn.addEventListener('click', () => renameDialog.close());
-  renameInput.addEventListener('keydown', e => {
+  renameInput.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter') confirmRename();
     if (e.key === 'Escape') renameDialog.close();
   });
