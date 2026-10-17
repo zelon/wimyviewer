@@ -339,6 +339,7 @@ dialog {
   border: 1px solid #252530;
   border-radius: 12px;
   padding: 24px;
+  margin: auto; /* 전역 리셋(* { margin: 0 })이 기본 가운데 정렬을 덮어쓰므로 복원 */
   min-width: 340px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85);
 }
@@ -346,6 +347,11 @@ dialog {
 dialog::backdrop {
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(6px);
+}
+
+#rename-dialog::backdrop {
+  background: transparent;
+  backdrop-filter: none;
 }
 
 dialog h3 {
