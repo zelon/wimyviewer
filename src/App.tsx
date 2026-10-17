@@ -437,6 +437,16 @@ export default function App() {
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (dialogRef.current !== 'none') return;
 
+      // 종료: Alt+X, Ctrl+W, Ctrl+Q (CapsLock/한글 입력 상태와 무관하도록 e.code로 비교)
+      if (
+        (e.altKey && e.code === 'KeyX') ||
+        (e.ctrlKey && (e.code === 'KeyW' || e.code === 'KeyQ'))
+      ) {
+        e.preventDefault();
+        await appWindow.close();
+        return;
+      }
+
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault();
@@ -503,12 +513,6 @@ export default function App() {
         case '[':
           e.preventDefault();
           rotateView(-90);
-          break;
-        case 'x':
-          if (e.altKey) { e.preventDefault(); await appWindow.close(); }
-          break;
-        case 'w':
-          if (e.ctrlKey) { e.preventDefault(); await appWindow.close(); }
           break;
       }
     };
