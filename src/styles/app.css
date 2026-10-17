@@ -229,6 +229,38 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* ── 빈 화면 안내 ── */
+#empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+#empty-open {
+  padding: 8px 22px;
+  border-radius: 8px;
+  border: 1px solid rgba(92, 107, 250, 0.35);
+  background: rgba(92, 107, 250, 0.15);
+  color: #e0e0e0;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+#empty-open:hover {
+  background: rgba(92, 107, 250, 0.3);
+  border-color: rgba(92, 107, 250, 0.6);
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: #666;
+}
+
 /* ── 상태바 ── */
 #status-bar {
   background: #111114;

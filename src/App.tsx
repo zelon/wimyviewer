@@ -616,6 +616,11 @@ export default function App() {
     return () => canvas.removeEventListener('contextmenu', handleContextMenu);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const openFileDialog = async (): Promise<void> => {
+    const selected = await invoke<string | null>('select_file').catch(() => null);
+    if (selected) await openFileByPath(selected);
+  };
+
   // ── JSX용 파생 값 ─────────────────────────────────────────────────
   const filename = filePaths.length > 0
     ? filePaths[currentIndex].replace(/\\/g, '/').split('/').pop()!
@@ -646,10 +651,7 @@ export default function App() {
           zoomLevel={zoomLevel}
           saveDisabled={saveDisabled}
           isMaximized={isMaximized}
-          onOpen={async () => {
-            const selected = await invoke<string | null>('select_file').catch(() => null);
-            if (selected) await openFileByPath(selected);
-          }}
+          onOpen={() => { void openFileDialog(); }}
           onZoomActual={() => {
             if (filePaths.length === 0) return;
             setFM(false);
@@ -675,6 +677,8 @@ export default function App() {
         canvasContainerRef={canvasContainerRef}
         canvasInnerRef={canvasInnerRef}
         isLoading={isLoading}
+        isEmpty={filePaths.length === 0}
+        onOpen={() => { void openFileDialog(); }}
         onPrev={() => { void navigate(currentIndexRef.current - 1); }}
         onNext={() => { void navigate(currentIndexRef.current + 1); }}
       />
