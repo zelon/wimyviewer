@@ -17,7 +17,14 @@ export default function RenameDialog({ open, initialName, ext, onConfirm, onCanc
     if (open) {
       setValue(initialName);
       dialogRef.current?.showModal();
-      requestAnimationFrame(() => inputRef.current?.select());
+      // state 반영(재렌더)을 기다리지 않고 DOM 값을 먼저 맞춘 뒤 전체 선택.
+      // 재렌더 시 React는 값이 같으면 DOM을 건드리지 않으므로 선택이 유지된다.
+      const input = inputRef.current;
+      if (input) {
+        input.value = initialName;
+        input.focus();
+        input.select();
+      }
     } else {
       dialogRef.current?.close();
     }
