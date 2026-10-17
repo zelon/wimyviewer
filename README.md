@@ -33,3 +33,28 @@ cargo tauri build
 ```
 ./src-tauri/target/release/wimy-viewer.exe
 ```
+
+# Shortcuts
+
+## Keyboard
+| Key | Action |
+|---|---|
+| `←` / `→` | Previous / next image |
+| `Home` / `End` | First / last image |
+| `1` | Actual size (100%) |
+| `0` | Fit to window |
+| `R` or `]` | Rotate 90° clockwise |
+| `[` | Rotate 90° counterclockwise |
+| `F`, `F11`, `Alt+Enter` | Toggle fullscreen |
+| `Esc` | Close context menu / exit fullscreen |
+| `Delete` | Delete current image |
+| `F2` | Rename current image |
+| `Alt+X`, `Ctrl+W`, `Ctrl+Q` | Quit |
+
+## Mouse
+| Input | Action |
+|---|---|
+| Wheel | Previous / next image |
+| `Ctrl` + Wheel | Zoom in / out |
+| Left drag | Pan (when the image is larger than the window) |
+| Right click | Context menu |
